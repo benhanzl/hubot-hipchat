@@ -16,15 +16,8 @@ class HipChat extends Adapter
     @send envelope, strings.map((str) -> "/me #{str}")...
 
   send: (envelope, strings...) ->
-    {user, room} = envelope
-    user = envelope if not user # pre-2.4.2 style
-
-    target_jid = @targetJid user, room
-    if not target_jid
-      return @logger.error "ERROR: Not sure who to send to: envelope=#{inspect envelope}"
-
     for str in strings
-      @connector.message target_jid, str
+      @connector.message envelope.room, str
 
   topic: (envelope, message) ->
     {user, room} = envelope
@@ -192,9 +185,8 @@ class HipChat extends Adapter
         # buffer message events until the roster fetch completes
         # to ensure user data is properly loaded
         init.done =>
-          {getAuthor, message, reply_to, room} = opts
-          author = Object.create(getAuthor()) or {}
-          author.reply_to = reply_to
+          {getAuthor, message, room} = opts
+          author = getAuthor() or {}
           author.room = room
           @receive new TextMessage(author, message)
 
@@ -208,7 +200,6 @@ class HipChat extends Adapter
           handleMessage
             getAuthor: => @robot.brain.userForName(from) or new User(from)
             message: message
-            reply_to: channel
             room: @rooms[channel].name
 
         connector.onPrivateMessage (from, message) =>
@@ -220,7 +211,7 @@ class HipChat extends Adapter
           handleMessage
             getAuthor: => @robot.brain.userForId(@userIdFromJid from)
             message: message
-            reply_to: from
+            room: from
 
       changePresence = (PresenceMessage, user_jid, room_jid, currentName) =>
         # buffer presence events until the roster fetch completes
