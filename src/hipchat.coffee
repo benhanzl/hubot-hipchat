@@ -141,12 +141,15 @@ class HipChat extends Adapter
         connector.getRooms (err, rooms, stanza) =>
           if rooms
             for room in rooms
-              if !@options.rooms_join_public && room.guest_url != '' && room.jid == jid
+              if room.jid != jid
+                return
+
+              if room.guest_url != '' && !@options.rooms_join_public
                 @logger.info "Not joining #{room.jid} because it is a public room"
-                return
-              else if room.jid == jid
+              else
+                @logger.info "Joining #{jid}"
                 connector.join jid
-                return
+
       # Fetch user info
       connector.getRoster (err, users, stanza) =>
         return init.reject err if err
